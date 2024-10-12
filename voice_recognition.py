@@ -2,6 +2,9 @@ import sounddevice as sd
 import numpy as np
 import wavio
 from database import insert_image  # Use for saving audio if required
+from Crypto.Cipher import AES
+import os
+import base64
 
 def capture_voice(filename='captured_voice.wav', duration=5):
     """Capture audio from the microphone."""
@@ -12,8 +15,18 @@ def capture_voice(filename='captured_voice.wav', duration=5):
     print(f"Voice saved as {filename}")
     return filename
 
-def encrypt_voice(filename):
+def encrypt_voice(voice_file, output_file):
     """Encrypt the captured voice file."""
-    # Implement your AES encryption here
-    print(f"Encrypting voice file {filename}.")
-    # Return some value (e.g., path, success flag)
+    key = os.urandom(16)  # AES requires a key of 16, 24, or 32 bytes
+    cipher = AES.new(key, AES.MODE_EAX)
+    
+    with open(voice_file, 'rb') as file:
+        plaintext = file.read()
+    
+    ciphertext, tag = cipher.encrypt_and_digest(plaintext)
+
+    # Save the encrypted file
+    with open(output_file, 'wb') as enc_file:
+        enc_file.write(cipher.nonce + tag + ciphertext)
+
+    print(f"Voice file encrypted and saved as {output_file}.")
