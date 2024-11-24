@@ -15,15 +15,50 @@ mp_drawing = mp.solutions.drawing_utils
 def capture_image(img_name):
     # Open the webcam
     cap = cv2.VideoCapture(0)
-    ret, frame = cap.read()
-    if ret:
-        cv2.imwrite(img_name, frame)  # Save the captured frame
-        cap.release()
-        return img_name
-    else:
-        print("Failed to capture image")
-        cap.release()
+    if not cap.isOpened():
+        print("Error: Unable to access the webcam.")
         return None
+
+    print("Press 's' to scan and capture your face.")
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            print("Error: Unable to read from the webcam.")
+            break
+
+        # Convert the frame to RGB
+        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+        # Detect faces in the frame
+        results = face_detection.process(rgb_frame)
+
+        # Draw detections on the frame
+        if results.detections:
+            for detection in results.detections:
+                mp_drawing.draw_detection(frame, detection)
+
+            # Show a "Scanning" message on the frame
+            cv2.putText(frame, "Scanning...", (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
+
+        # Display the live feed
+        cv2.imshow("Face Scanning", frame)
+
+        # Wait for the user to press 's' to save the image or 'q' to quit
+        key = cv2.waitKey(1)
+        if key & 0xFF == ord('s'):  # 's' key to save
+            cv2.imwrite(img_name, frame)
+            print(f"Image captured and saved as {img_name}")
+            break
+        elif key & 0xFF == ord('q'):  # 'q' key to quit
+            print("Scanning canceled by the user.")
+            img_name = None
+            break
+
+    # Release the webcam and close OpenCV windows
+    cap.release()
+    cv2.destroyAllWindows()
+    return img_name
+
 
 def detect_face(image_path):
     # Read the image
